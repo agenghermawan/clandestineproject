@@ -9,7 +9,7 @@ export default function ContactPage() {
     // Untuk mailto, kita harus encode body-nya
     const handleMailto = (e) => {
         e.preventDefault();
-        const to = "contact@clandestine.com";
+        const to = "vertegenwoordiger@clandestineproject.nl";
         const subject = encodeURIComponent(`[Contact Form] Message from ${form.name}`);
         const body = encodeURIComponent(
             `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
@@ -36,7 +36,7 @@ export default function ContactPage() {
                         <div className="text-sm text-gray-500 space-y-2 w-full">
                             <div>
                                 <span className="font-semibold text-white">Email:</span> <br/>
-                                <a href="mailto:contact@clandestine.com" className="hover:text-[#f33d74]">contact@clandestine.com</a>
+                                <a href="mailto:vertegenwoordiger@clandestineproject.nl" className="hover:text-[#f33d74]">vertegenwoordiger@clandestineproject.nl</a>
                             </div>
                         </div>
                     </div>
