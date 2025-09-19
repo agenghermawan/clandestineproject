@@ -1,20 +1,50 @@
 'use client'
+
 import Image from "next/image";
 import Navbar from "../../components/navbar";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
+import { FaRegPaperPlane } from "react-icons/fa"; // Icon email sent
 
 export default function ContactPage() {
     const [form, setForm] = useState({ name: "", email: "", message: "" });
+    const [loading, setLoading] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [error, setError] = useState("");
+    const captchaRef = useRef(null);
 
-    // Untuk mailto, kita harus encode body-nya
-    const handleMailto = (e) => {
+    // Submit handler
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const to = "vertegenwoordiger@clandestineproject.nl";
-        const subject = encodeURIComponent(`[Contact Form] Message from ${form.name}`);
-        const body = encodeURIComponent(
-            `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
-        );
-        window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        setError("");
+        setLoading(true);
+
+        const captchaValue = captchaRef.current.getValue();
+        if (!captchaValue) {
+            setError("Captcha wajib diisi.");
+            setLoading(false);
+            return;
+        }
+
+        const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...form, captcha: captchaValue }),
+        });
+        const data = await res.json();
+        setLoading(false);
+
+        if (data.success) {
+            setShowModal(true);
+            setForm({ name: "", email: "", message: "" });
+            captchaRef.current.reset();
+        } else {
+            setError(data.error || "Gagal mengirim pesan.");
+        }
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
     };
 
     return (
@@ -46,7 +76,7 @@ export default function ContactPage() {
                         <p className="text-gray-400 mb-8">
                             Fill in the form and our team will get back to you as soon as possible.
                         </p>
-                        <form className="space-y-6" onSubmit={handleMailto}>
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label className="text-gray-300 block mb-2">Name</label>
                                 <input
@@ -83,14 +113,40 @@ export default function ContactPage() {
                                     required
                                 />
                             </div>
+                            <div className="mb-4 flex justify-center">
+                                <ReCAPTCHA
+                                    sitekey="6Lcvh3ErAAAAAA1clQ_IFIvC8l4aZro2poENUncA"
+                                    ref={captchaRef}
+                                    theme="dark"
+                                />
+                            </div>
+                            {error && (
+                                <div className="text-xs text-red-500 mt-2 text-center">{error}</div>
+                            )}
                             <button
                                 type="submit"
                                 className="w-full py-3 bg-[#f33d74] hover:bg-[#e63368] rounded-lg text-white font-bold transition-colors flex justify-center"
+                                disabled={loading}
                             >
-                                Send Message
+                                {loading ? "Sending..." : "Send Message"}
                             </button>
-                          
                         </form>
+                        {/* Modal success */}
+                        {showModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg shadow-lg p-8 text-center flex flex-col items-center">
+                                    <FaRegPaperPlane className="text-[#f33d74] mb-4" size={48}/>
+                                    <h3 className="text-2xl font-bold text-[#f33d74] mb-2">Success!</h3>
+                                    <p className="text-gray-700 mb-4">Your message has been sent.</p>
+                                    <button
+                                        className="px-6 py-2 bg-[#f33d74] text-white rounded font-bold"
+                                        onClick={closeModal}
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
