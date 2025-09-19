@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #080b12;
+    --foreground: #171717;
+    --font-poppins: 'Poppins', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+        --font-poppins: 'Poppins', sans-serif;
+    }
+}
+
+body {
+    color: var(--foreground);
+    font-family: var(--font-poppins), sans-serif;
+    background: var(--background);
+}
+
+.shimmer-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 300%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.4) 50%, transparent 75%);
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 0.75rem;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -150%;
+    }
+    100% {
+        left: 150%;
+    }
+}
+
+/* Pastikan form tetap di atas */
+.shimmer-card {
+    position: relative;
+    z-index: 2;
+    background-color: #1f2937; /* bg-gray-800 */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.glitch {
+    position: relative;
+    color: #0f0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: hidden;
+    color: #0f0;
+    clip: rect(0, 0, 0, 0);
+}
+
+.glitch::before {
+    left: 2px;
+    text-shadow: -2px 0 red;
+    animation: glitch 1s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+    left: -2px;
+    text-shadow: 2px 0 blue;
+    animation: glitch 1s infinite linear alternate;
+}
+
+@keyframes glitch {
+    0% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+    20% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+    40% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+    60% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+    80% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+    100% {
+        clip: rect(0, 9999px, 0, 0);
+    }
+}
+
+@keyframes hacker-glow-blue {
+    0% {
+        box-shadow: 0 0 5px rgba(0, 191, 255, 0.7), 0 0 10px rgba(0, 191, 255, 0.5),
+        0 0 20px rgba(0, 191, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(0, 191, 255, 0.8), 0 0 20px rgba(0, 191, 255, 0.6),
+        0 0 30px rgba(0, 191, 255, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(0, 191, 255, 0.7), 0 0 10px rgba(0, 191, 255, 0.5),
+        0 0 20px rgba(0, 191, 255, 0.3);
+    }
+}
+
+.shadow-hacker-glow-blue {
+    box-shadow: 0 0 5px rgba(0, 191, 255, 0.7), 0 0 10px rgba(0, 191, 255, 0.5),
+    0 0 20px rgba(0, 191, 255, 0.3);
+    animation: hacker-glow-blue 3s infinite;
+}
+
+
+.button {
+    grid-column-gap: 8px;
+    grid-row-gap: 8px;
+    color: white;
+    white-space: nowrap;
+    border-radius: 12px;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 20px;
+    line-height: 24px;
+    text-decoration: none;
+    transition: color .2s cubic-bezier(.165, .84, .44, 1), background-color .2s cubic-bezier(.165, .84, .44, 1);
+    display: flex;
+}
+
+.input-glass {
+    width: 100%;
+    height: 50px;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    background: hsla(0, 0%, 100%, .08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, hsla(0, 0%, 100%, .08) 30%, hsla(0, 0%, 100%, .04)), radial-gradient(60% 60% at 50% 0, hsla(0, 0%, 100%, .08) 0, hsla(0, 0%, 100%, 0) 100%);
+}
+
+/* Button */
+.btn-hover:hover {
+    background-color: #e6194d;
+    color: white;
+    transition: all 0.3s ease;
+    transform: scale(1.05);
+}
+
+.text-heading {
+    letter-spacing: -.5px;
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 32px;
+    font-weight: 300;
+    line-height: 64px;
+}
+
+
+@keyframes fade-in-up {
+    from { opacity:0; transform:translateY(10px);}
+    to { opacity:1; transform:translateY(0);}
+}
+.animate-fade-in-up { animation: fade-in-up 0.18s; }
