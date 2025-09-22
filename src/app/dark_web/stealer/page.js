@@ -221,7 +221,7 @@ export default function StealerPageContent() {
                 });
                 return;
             }
-            query = `domain=${encodeURIComponent(searchDomain)}&type=stealer&page=${page}&size=${size}`;
+            query = `domain=*${encodeURIComponent(searchDomain)}*&type=stealer&page=${page}&size=${size}`;
         }
 
         // Simpan query terakhir untuk export
