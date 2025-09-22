@@ -484,7 +484,7 @@ export default function LeaksPage() {
     return (
         <div className="relative">
             {(isLoading || scanStep) && (
-                <VAScannerLoader status={scanStep || "Scanning..."} domain={searchInput} from_leaks={1} />
+                <VAScannerLoader status={scanStep || "Scanning..."} domain={searchInput} from_leaks={1} message={""} />
             )}
             {!(isLoading || scanStep) && (
                 <ErrorModal
@@ -588,7 +588,6 @@ export default function LeaksPage() {
                                 : "Scraped Professional Profiles"}
                         </h2>
 
-                        {/* ==== Statistik + Chart Modern ala Stealer ==== */}
                         <LeaksStatisticsWithChart
                             total={totalEntries}
                             filtered={filteredCount}
@@ -600,7 +599,7 @@ export default function LeaksPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[200px]">
                                 {isLoading ? (
                                     <div className="col-span-full flex justify-center items-center py-16">
-                                        <VAScannerLoader status={scanStep || "Scanning..."} domain={searchInput} />
+                                        <VAScannerLoader status={scanStep || "Scanning..."} domain={searchInput} message={""} />
                                     </div>
                                 ) : breachData.length === 0 && showEmptyAlert ? (
                                     <div className="col-span-full flex flex-col items-center justify-center py-16">

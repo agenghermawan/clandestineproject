@@ -495,7 +495,7 @@ export default function StealerPageContent() {
                     loadingAll
                         ? "Exporting all logs..."
                         : (downloadStep || scanStep || "Scanning...")
-                } domain={searchValue} />
+                } domain={searchValue} message={""} />
             )}
             {!(downloadLoading || isLoading || scanStep) && (
                 <ErrorModal
