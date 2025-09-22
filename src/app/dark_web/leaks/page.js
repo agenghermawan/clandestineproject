@@ -15,6 +15,7 @@ function ErrorModal({ show, message, onClose, limit }) {
     if (!show) return null;
     const isExpired = message && message.toLowerCase().includes("expired");
     const isLimitReached = message && message.toLowerCase().includes("search limit");
+    const showLimitReached = isLimitReached && !(limit?.isUnlimited);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
@@ -38,7 +39,7 @@ function ErrorModal({ show, message, onClose, limit }) {
                                 <ellipse cx="30" cy="28" rx="1.8" ry="1.8" fill="#fff" />
                             </g>
                         </svg>
-                    ) : isLimitReached ? (
+                    ) : showLimitReached ? (
                         <svg width="56" height="56" viewBox="0 0 56 56" fill="none" className="drop-shadow-xl">
                             <circle cx="28" cy="28" r="26" fill="#18181c" stroke="#FFD700" strokeWidth="2" />
                             <rect x="18" y="24" width="20" height="14" rx="4" fill="#232339" stroke="#FFD700" strokeWidth="1.5" />
@@ -54,16 +55,16 @@ function ErrorModal({ show, message, onClose, limit }) {
                         </svg>
                     )}
                 </div>
-                <h2 className={`text-lg font-bold mb-4 text-center ${isExpired ? "text-yellow-400" : isLimitReached ? "text-yellow-300" : "text-red-400"}`}>
-                    {isExpired ? "Your Plan Has Expired" : isLimitReached ? "Search Limit Reached" : "Oops! Subscription Needed ..."}
+                <h2 className={`text-lg font-bold mb-4 text-center ${isExpired ? "text-yellow-400" : showLimitReached ? "text-yellow-300" : "text-red-400"}`}>
+                    {isExpired ? "Your Plan Has Expired"
+                        : showLimitReached ? "Search Limit Reached"
+                            : "Oops! Subscription Needed ..."}
                 </h2>
                 <div className="text-white text-center whitespace-pre-line mb-2">
                     {isExpired
                         ? "Your subscription plan has expired. Please renew or purchase a new plan to continue accessing this feature."
-                        : isLimitReached
-                            ? (limit?.isUnlimited
-                                ? "You have unlimited search."
-                                : `You have reached your search limit. Please upgrade your plan or wait for the limit to reset.\nUsed ${limit?.current} of ${limit?.max}` )
+                        : showLimitReached
+                            ? `You have reached your search limit. Please upgrade your plan or wait for the limit to reset.\nUsed ${limit?.current} of ${limit?.max}`
                             : message}
                 </div>
                 {isExpired && (
@@ -79,7 +80,6 @@ function ErrorModal({ show, message, onClose, limit }) {
     );
 }
 
-// -------- LIMIT FETCH FUNCTION --------
 async function fetchLimitFromBackend(setSearchLimit) {
     try {
         const res = await fetch("/api/leaks/get-limit", { credentials: "include" });
@@ -126,10 +126,8 @@ export default function LeaksPage() {
     const [plan, setPlan] = useState(null);
     const [errorModal, setErrorModal] = useState({ show: false, message: "" });
 
-    // --- LIMIT FETCH ---
     const [searchLimit, setSearchLimit] = useState(null);
 
-    // Fetch limit ONLY on reload/login
     useEffect(() => {
         if (authState !== "authenticated") return;
         fetchLimitFromBackend(setSearchLimit);
@@ -334,7 +332,16 @@ export default function LeaksPage() {
         }
     };
 
-    // --- HANDLE SEARCH: fetch limit after search, NOT optimistic ---
+    // POST ke endpoint update limit (hanya saat search baru)
+    const updateSearchLimit = async () => {
+        try {
+            const res = await fetch("/api/leaks/update-limit", { method: "POST", credentials: "include" });
+            return res.ok;
+        } catch (e) {
+            return false;
+        }
+    };
+
     const handleSearch = async () => {
         if (authState === "loading" || isLoading) return;
         if (authState !== "authenticated") {
@@ -360,7 +367,7 @@ export default function LeaksPage() {
             return;
         }
 
-        // Check limit before search (from backend, NOT optimistic)
+        // Validasi limit hanya jika BUKAN unlimited
         if (
             searchLimit && typeof searchLimit.max !== "undefined" && typeof searchLimit.current !== "undefined"
         ) {
@@ -373,17 +380,6 @@ export default function LeaksPage() {
             }
         }
 
-        if (
-            searchLimit &&
-            !searchLimit.isUnlimited &&
-            typeof searchLimit.current === "number"
-        ) {
-            setSearchLimit((prev) => ({
-                ...prev,
-                current: prev.current + 1,
-            }));
-        }
-
         setPagination((prev) => ({
             ...prev,
             page: 1,
@@ -393,16 +389,25 @@ export default function LeaksPage() {
         setBreachData([]);
         setHasSearched(true);
 
-        // Jalankan search
+        // Kalau bukan unlimited, update limit via POST
+        if (searchLimit && !searchLimit.isUnlimited) {
+            const limitUpdated = await updateSearchLimit();
+            if (!limitUpdated) {
+                setErrorModal({ show: true, message: "Failed to update search limit" });
+                return;
+            }
+            // Optional: fetch limit terbaru biar UI sync
+            await fetchLimitFromBackend(setSearchLimit);
+        }
+
         if (searchInput === searchQuery) {
             await loadNewData();
         } else {
             setSearchQuery(searchInput);
         }
-
     };
 
-    // --- Pagination does NOT update quota ---
+    // Pagination: hanya fetch data, quota tetap
     const handlePagination = (direction) => {
         if (isLoading) return;
         if (direction === "prev" && pagination.page > 1) {
@@ -413,10 +418,6 @@ export default function LeaksPage() {
         ) {
             setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
         }
-
-        setTimeout(async () => {
-            await fetchLimitFromBackend(setSearchLimit);
-        }, 200);
     };
 
     const handleSizeInputChange = (e) => {
@@ -562,14 +563,12 @@ export default function LeaksPage() {
                                 )}
                             </button>
                         </div>
-                        {/* LIMIT INFO */}
-                        {(searchLimit && typeof searchLimit.max !== "undefined" && typeof searchLimit.current !== "undefined") && (
+                        {/* LIMIT INFO: HANYA tampil kalau TIDAK unlimited */}
+                        {(searchLimit && !searchLimit.isUnlimited && typeof searchLimit.max !== "undefined" && typeof searchLimit.current !== "undefined") && (
                             <div className="mt-2 text-sm text-yellow-400">
-                                {searchLimit.isUnlimited
-                                    ? "Unlimited search available"
-                                    : (searchLimit.current >= searchLimit.max
-                                        ? `Search limit reached (${searchLimit.current}/${searchLimit.max})`
-                                        : `Search left: ${searchLimit.max - searchLimit.current} / ${searchLimit.max}`)}
+                                {searchLimit.current >= searchLimit.max
+                                    ? `Search limit reached (${searchLimit.current}/${searchLimit.max})`
+                                    : `Search left: ${searchLimit.max - searchLimit.current} / ${searchLimit.max}`}
                             </div>
                         )}
                     </div>
