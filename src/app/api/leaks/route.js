@@ -1,8 +1,6 @@
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
-    console.log("🔍 Proxy route accessed");
-
     // Retrieve search parameters from the URL
     const { searchParams } = new URL(req.url);
     const q = searchParams.get('q');
@@ -21,7 +19,7 @@ export async function GET(req) {
 
     // Forward token asli ke backend (jangan decode/jangan ambil .user)
     const res = await fetch(
-        `http://103.245.181.5:5001/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`,
+        `http://103.245.181.5:5001/do-search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`,
         {
             headers: {
                 'Content-Type': 'application/json',

@@ -11,15 +11,10 @@ import LeaksStatisticsWithChart from "../../../components/leaks/leaks_statistic_
 
 gsap.registerPlugin(ScrollToPlugin);
 
-function ErrorModal({ show, message, onClose, userDomains, plan  }) {
+function ErrorModal({ show, message, onClose, limit }) {
     if (!show) return null;
     const isExpired = message && message.toLowerCase().includes("expired");
-    const isNotAllowed = message && (
-        message.toLowerCase().includes("not allowed") ||
-        message.toLowerCase().includes("not registered") ||
-        message.toLowerCase().includes("no domain")
-    );
-    const showAllowed = isNotAllowed && plan?.domain !== "unlimited" && userDomains?.length > 0;
+    const isLimitReached = message && message.toLowerCase().includes("search limit");
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
@@ -43,6 +38,12 @@ function ErrorModal({ show, message, onClose, userDomains, plan  }) {
                                 <ellipse cx="30" cy="28" rx="1.8" ry="1.8" fill="#fff" />
                             </g>
                         </svg>
+                    ) : isLimitReached ? (
+                        <svg width="56" height="56" viewBox="0 0 56 56" fill="none" className="drop-shadow-xl">
+                            <circle cx="28" cy="28" r="26" fill="#18181c" stroke="#FFD700" strokeWidth="2" />
+                            <rect x="18" y="24" width="20" height="14" rx="4" fill="#232339" stroke="#FFD700" strokeWidth="1.5" />
+                            <text x="28" y="31" textAnchor="middle" fill="#FFD700" fontSize="10" dy=".3em">LIMIT</text>
+                        </svg>
                     ) : (
                         <svg width="56" height="56" viewBox="0 0 56 56" fill="none" className="drop-shadow-xl">
                             <circle cx="28" cy="28" r="26" fill="#18181c" stroke="#f03262" strokeWidth="2" />
@@ -53,19 +54,18 @@ function ErrorModal({ show, message, onClose, userDomains, plan  }) {
                         </svg>
                     )}
                 </div>
-                <h2 className={`text-lg font-bold mb-4 text-center ${isExpired ? "text-yellow-400" : "text-red-400"}`}>
-                    {isExpired ? "Your Plan Has Expired" : "Domain not allowed"}
+                <h2 className={`text-lg font-bold mb-4 text-center ${isExpired ? "text-yellow-400" : isLimitReached ? "text-yellow-300" : "text-red-400"}`}>
+                    {isExpired ? "Your Plan Has Expired" : isLimitReached ? "Search Limit Reached" : "Oops! Subscription Needed ..."}
                 </h2>
                 <div className="text-white text-center whitespace-pre-line mb-2">
                     {isExpired
                         ? "Your subscription plan has expired. Please renew or purchase a new plan to continue accessing this feature."
-                        : message}
+                        : isLimitReached
+                            ? (limit?.isUnlimited
+                                ? "You have unlimited search."
+                                : `You have reached your search limit. Please upgrade your plan or wait for the limit to reset.\nUsed ${limit?.current} of ${limit?.max}` )
+                            : message}
                 </div>
-                {showAllowed && (
-                    <div className="mt-2 text-sm text-cyan-400 text-center">
-                        Allowed domains: {userDomains.join(", ")}
-                    </div>
-                )}
                 {isExpired && (
                     <a
                         href="/pricing"
@@ -77,6 +77,29 @@ function ErrorModal({ show, message, onClose, userDomains, plan  }) {
             </div>
         </div>
     );
+}
+
+// -------- LIMIT FETCH FUNCTION --------
+async function fetchLimitFromBackend(setSearchLimit) {
+    try {
+        const res = await fetch("/api/leaks/get-limit", { credentials: "include" });
+        if (res.ok) {
+            const data = await res.json();
+            let isUnlimited = false;
+            let max = 0;
+            let current = 0;
+            if (data?.data?.breach === "unlimited") {
+                isUnlimited = true;
+                max = Infinity;
+                current = Number(data?.data?.current_breach ?? 0);
+            } else {
+                max = Number(data?.data?.breach ?? 0);
+                current = Number(data?.data?.current_breach ?? 0);
+                isUnlimited = false;
+            }
+            setSearchLimit({ max, current, isUnlimited });
+        }
+    } catch (e) {}
 }
 
 export default function LeaksPage() {
@@ -98,21 +121,23 @@ export default function LeaksPage() {
     const resultsRef = useRef(null);
     const tableRef = useRef(null);
     const [showEmptyAlert, setShowEmptyAlert] = useState(false);
-    const [hasSubscription, setHasSubscription] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
 
     const [plan, setPlan] = useState(null);
-    const [userDomains, setUserDomains] = useState([]);
-    const [domainLoaded, setDomainLoaded] = useState(false);
-
     const [errorModal, setErrorModal] = useState({ show: false, message: "" });
 
-    // --- PLAN FETCH (for unlimited support) ---
+    // --- LIMIT FETCH ---
+    const [searchLimit, setSearchLimit] = useState(null);
+
+    // Fetch limit ONLY on reload/login
     useEffect(() => {
-        if (authState !== "authenticated") {
-            setDomainLoaded(true);
-            return;
-        }
+        if (authState !== "authenticated") return;
+        fetchLimitFromBackend(setSearchLimit);
+    }, [authState]);
+
+    // --- PLAN FETCH (for expired support, not for domain) ---
+    useEffect(() => {
+        if (authState !== "authenticated") return;
         let ignore = false;
         (async () => {
             try {
@@ -120,18 +145,8 @@ export default function LeaksPage() {
                 if (planRes.ok) {
                     const planData = await planRes.json();
                     setPlan(planData.data);
-                    setHasSubscription(!!planData.data);
-                    if (planData.data?.domain !== "unlimited") {
-                        const domains = Array.isArray(planData.data?.registered_domain) ? planData.data.registered_domain : [];
-                        setUserDomains(domains);
-                        if (!searchInput && domains.length > 0) setSearchInput(domains[0]);
-                    }
-                } else {
-                    setHasSubscription(false);
                 }
-            } finally {
-                if (!ignore) setDomainLoaded(true);
-            }
+            } finally { }
         })();
         return () => { ignore = true; };
     }, [authState]);
@@ -251,7 +266,7 @@ export default function LeaksPage() {
                 const data = await response.json();
                 setErrorModal({
                     show: true,
-                    message: data.error || "Domain is not allowed for search.",
+                    message: data.error || "Search forbidden.",
                 });
                 setBreachData([]);
                 setShowEmptyAlert(true);
@@ -291,6 +306,7 @@ export default function LeaksPage() {
                 ...prev,
                 total: data.total || 0,
             }));
+
         } catch (error) {
             setShowEmptyAlert(true);
             setBreachData([]);
@@ -318,7 +334,8 @@ export default function LeaksPage() {
         }
     };
 
-    const handleSearch = () => {
+    // --- HANDLE SEARCH: fetch limit after search, NOT optimistic ---
+    const handleSearch = async () => {
         if (authState === "loading" || isLoading) return;
         if (authState !== "authenticated") {
             router.push("/login");
@@ -343,14 +360,28 @@ export default function LeaksPage() {
             return;
         }
 
-        if (plan.domain !== "unlimited") {
-            if (!userDomains.includes(searchInput.trim())) {
+        // Check limit before search (from backend, NOT optimistic)
+        if (
+            searchLimit && typeof searchLimit.max !== "undefined" && typeof searchLimit.current !== "undefined"
+        ) {
+            if (!searchLimit.isUnlimited && searchLimit.current >= searchLimit.max) {
                 setErrorModal({
                     show: true,
-                    message: "Domain not allowed or not registered.",
+                    message: "Search limit reached! You have used all available searches.",
                 });
                 return;
             }
+        }
+
+        if (
+            searchLimit &&
+            !searchLimit.isUnlimited &&
+            typeof searchLimit.current === "number"
+        ) {
+            setSearchLimit((prev) => ({
+                ...prev,
+                current: prev.current + 1,
+            }));
         }
 
         setPagination((prev) => ({
@@ -362,13 +393,16 @@ export default function LeaksPage() {
         setBreachData([]);
         setHasSearched(true);
 
+        // Jalankan search
         if (searchInput === searchQuery) {
-            loadNewData();
+            await loadNewData();
         } else {
             setSearchQuery(searchInput);
         }
+
     };
 
+    // --- Pagination does NOT update quota ---
     const handlePagination = (direction) => {
         if (isLoading) return;
         if (direction === "prev" && pagination.page > 1) {
@@ -379,6 +413,10 @@ export default function LeaksPage() {
         ) {
             setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
         }
+
+        setTimeout(async () => {
+            await fetchLimitFromBackend(setSearchLimit);
+        }, 200);
     };
 
     const handleSizeInputChange = (e) => {
@@ -452,8 +490,7 @@ export default function LeaksPage() {
                     show={errorModal.show}
                     message={errorModal.message}
                     onClose={() => setErrorModal({ show: false, message: "" })}
-                    userDomains={userDomains}
-                    plan={plan}
+                    limit={searchLimit}
                 />
             )}
 
@@ -477,11 +514,7 @@ export default function LeaksPage() {
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                                placeholder={
-                                    plan?.domain === "unlimited"
-                                        ? "Search by keyword (email, domain, password, etc)"
-                                        : `Search by Domain (${userDomains[0] || "your domain"})`
-                                }
+                                placeholder={"Search by keyword (email, domain, password, etc)"}
                                 className="input-glass bg-black text-white placeholder-gray-500 border border-gray-700 flex-1 px-4 py-2 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-[#0aafff] focus:border-transparent"
                             />
                             <button
@@ -529,11 +562,14 @@ export default function LeaksPage() {
                                 )}
                             </button>
                         </div>
-                        {plan?.domain === "unlimited" ? null : (
-                            <div className="mt-2 text-sm text-gray-400">
-                                {userDomains.length > 0
-                                    ? `Allowed domains: ${userDomains.join(", ")}`
-                                    : "No domain available in your account. Please select a plan and register your domain to enable this feature."}
+                        {/* LIMIT INFO */}
+                        {(searchLimit && typeof searchLimit.max !== "undefined" && typeof searchLimit.current !== "undefined") && (
+                            <div className="mt-2 text-sm text-yellow-400">
+                                {searchLimit.isUnlimited
+                                    ? "Unlimited search available"
+                                    : (searchLimit.current >= searchLimit.max
+                                        ? `Search limit reached (${searchLimit.current}/${searchLimit.max})`
+                                        : `Search left: ${searchLimit.max - searchLimit.current} / ${searchLimit.max}`)}
                             </div>
                         )}
                     </div>
