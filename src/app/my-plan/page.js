@@ -3,7 +3,6 @@
 import {useEffect, useState} from "react";
 import AnimatedDarkWebBackground from "../../components/ui/myplan-background";
 
-
 function UnlimitedSVG() {
     return (
         <svg width="64" height="64" viewBox="0 0 64 64" fill="none"
@@ -41,7 +40,7 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
 
     useEffect(() => {
         if (show) {
-            setDomains(registeredDomains.length > 0 ? [...registeredDomains] : [""]);
+            setDomains(registeredDomains.length > 0 ? [...registeredDomains, ""] : [""]);
             setRegisterError(null);
             setRegisterSuccess("");
             setRegistering(false);
@@ -57,10 +56,16 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
         setRegisterError(null);
         setRegisterSuccess("");
         try {
-            const filteredDomains = domains.map(d => d.trim()).filter(Boolean);
-            if (!filteredDomains.length) throw new Error("Please enter at least one domain.");
-            if (!isUnlimited && filteredDomains.length > domainLimit) throw new Error(`Maximum ${domainLimit} domains allowed.`);
+            const immutableCount = registeredDomains.length;
+            const filteredDomains = domains
+                .slice(immutableCount) // hanya domain baru
+                .map(d => d.trim())
+                .filter(Boolean);
+
+            if (!filteredDomains.length) throw new Error("Please enter at least one new domain.");
+            if (!isUnlimited && (immutableCount + filteredDomains.length) > domainLimit) throw new Error(`Maximum ${domainLimit} domains allowed.`);
             if (!invoiceId) throw new Error("Invoice ID is missing.");
+
             const res = await fetch(`/api/register-domain?invoiceId=${invoiceId}`, {
                 method: "POST",
                 credentials: "include",
@@ -70,7 +75,7 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
             const result = await res.json();
             if (!res.ok) throw new Error(result.message || "Failed to register domains");
             setRegisterSuccess("Domains registered successfully!");
-            setDomains(filteredDomains);
+            setDomains([...registeredDomains, ...filteredDomains]);
             if (onSuccess) onSuccess();
             onClose();
         } catch (e) {
@@ -81,6 +86,8 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
     };
 
     if (!show) return null;
+
+    const immutableCount = registeredDomains.length;
 
     return (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center px-4">
@@ -96,11 +103,9 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
                 </h2>
                 <div className="mb-2 text-center text-gray-300 text-sm">
                     {isUnlimited ? (
-                        <>You can register <span className="font-bold text-yellow-400">unlimited</span> domains for this
-                            plan.</>
+                        <>You can register <span className="font-bold text-yellow-400">unlimited</span> domains for this plan.</>
                     ) : (
-                        <>You can register up to <span
-                            className="font-bold text-yellow-400">{domainLimit}</span> domains for this plan.</>
+                        <>You can register up to <span className="font-bold text-yellow-400">{domainLimit}</span> domains for this plan.</>
                     )}
                 </div>
                 <div className="space-y-2">
@@ -111,12 +116,15 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
                                 placeholder="Enter domain (e.g. example.com)"
                                 value={domain}
                                 onChange={e => {
-                                    const newDomains = [...domains];
-                                    newDomains[idx] = e.target.value;
-                                    setDomains(newDomains);
+                                    if (idx >= immutableCount) {
+                                        const newDomains = [...domains];
+                                        newDomains[idx] = e.target.value;
+                                        setDomains(newDomains);
+                                    }
                                 }}
+                                disabled={idx < immutableCount}
                             />
-                            {domains.length > 1 && (
+                            {(idx >= immutableCount && domains.length > immutableCount + 1) && (
                                 <button
                                     className="bg-red-600 hover:bg-red-700 px-2 rounded text-white text-sm font-bold"
                                     onClick={() => setDomains(domains.filter((_, i) => i !== idx))}
@@ -151,7 +159,6 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
                 .animate-fade-in {
                     animation: fadeIn .25s;
                 }
-
                 @keyframes fadeIn {
                     from {
                         opacity: 0;
