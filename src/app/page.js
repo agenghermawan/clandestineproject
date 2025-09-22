@@ -65,7 +65,15 @@ export default function Home() {
 
     return (
         <div className="relative overflow-x-hidden">
-
+            <div
+                className="w-full bg-yellow-400 text-black text-center py-2 px-4 font-semibold text-sm flex items-center justify-center z-40 shadow-md">
+                <svg className="w-4 h-4 mr-2 text-black inline" fill="none" stroke="currentColor" strokeWidth="2"
+                     viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01M4.93 19.07A10 10 0 1 1 19.07 4.93a10 10 0 0 1-14.14 14.14z"/>
+                </svg>
+                This platform is currently in <span className="font-bold mx-1">Beta</span>. Features and data may
+                change. Please share feedback!
+            </div>
             {/* Hero Section */}
             <div className="relative h-screen w-full">
                 <Globe/>

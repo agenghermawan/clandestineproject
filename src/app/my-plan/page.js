@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import AnimatedDarkWebBackground from "../../components/ui/myplan-background";
 
 function UnlimitedSVG() {
@@ -16,7 +16,6 @@ function UnlimitedSVG() {
                 .animate-fade-in {
                     animation: fadeIn .8s;
                 }
-
                 @keyframes fadeIn {
                     from {
                         opacity: 0;
@@ -33,14 +32,15 @@ function UnlimitedSVG() {
 }
 
 function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredDomains, onSuccess, isUnlimited}) {
-    const [domains, setDomains] = useState([""]);
+    // Pisahkan domain baru (editable) dan domain existing (readOnly)
+    const [newDomains, setNewDomains] = useState([""]);
     const [registering, setRegistering] = useState(false);
     const [registerError, setRegisterError] = useState(null);
     const [registerSuccess, setRegisterSuccess] = useState("");
 
     useEffect(() => {
         if (show) {
-            setDomains(registeredDomains.length > 0 ? [...registeredDomains, ""] : [""]);
+            setNewDomains([""]);
             setRegisterError(null);
             setRegisterSuccess("");
             setRegistering(false);
@@ -48,7 +48,7 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
     }, [show, registeredDomains]);
 
     const handleAddDomain = () => {
-        setDomains([...domains, ""]);
+        setNewDomains([...newDomains, ""]);
     };
 
     const handleRegisterDomain = async () => {
@@ -56,26 +56,28 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
         setRegisterError(null);
         setRegisterSuccess("");
         try {
-            const immutableCount = registeredDomains.length;
-            const filteredDomains = domains
-                .slice(immutableCount) // hanya domain baru
-                .map(d => d.trim())
-                .filter(Boolean);
+            // Gabungkan registeredDomains + domain baru, hindari duplikat
+            const newAdded = newDomains.map(d => d.trim()).filter(Boolean);
+            if (!newAdded.length) throw new Error("Please enter at least one new domain.");
 
-            if (!filteredDomains.length) throw new Error("Please enter at least one new domain.");
-            if (!isUnlimited && (immutableCount + filteredDomains.length) > domainLimit) throw new Error(`Maximum ${domainLimit} domains allowed.`);
+            // Gabung, hindari duplikat
+            const mergedDomains = Array.from(new Set([...(registeredDomains || []), ...newAdded]));
+
+            const totalDomains = mergedDomains.length;
+            if (!isUnlimited && totalDomains > domainLimit) throw new Error(`Maximum ${domainLimit} domains allowed.`);
             if (!invoiceId) throw new Error("Invoice ID is missing.");
 
+            // Kirim SEMUA domain (existing + baru) ke backend!
             const res = await fetch(`/api/register-domain?invoiceId=${invoiceId}`, {
                 method: "POST",
                 credentials: "include",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({selected_domains: filteredDomains})
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ selected_domains: mergedDomains })
             });
             const result = await res.json();
             if (!res.ok) throw new Error(result.message || "Failed to register domains");
             setRegisterSuccess("Domains registered successfully!");
-            setDomains([...registeredDomains, ...filteredDomains]);
+            setNewDomains([""]);
             if (onSuccess) onSuccess();
             onClose();
         } catch (e) {
@@ -86,8 +88,6 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
     };
 
     if (!show) return null;
-
-    const immutableCount = registeredDomains.length;
 
     return (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center px-4">
@@ -109,26 +109,37 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
                     )}
                 </div>
                 <div className="space-y-2">
-                    {domains.map((domain, idx) => (
-                        <div key={idx} className="flex gap-2">
+                    {/* Registered domains - readOnly, can't edit or remove */}
+                    {registeredDomains.map((domain, idx) => (
+                        <div key={`reg-${idx}`} className="flex gap-2">
+                            <input
+                                className="w-full p-2 rounded bg-gray-700 text-white"
+                                value={domain}
+                                readOnly
+                                tabIndex={-1}
+                            />
+                        </div>
+                    ))}
+                    {/* New domains - editable, can delete */}
+                    {newDomains.map((domain, idx) => (
+                        <div key={`new-${idx}`} className="flex gap-2">
                             <input
                                 className="w-full p-2 rounded bg-gray-700 text-white"
                                 placeholder="Enter domain (e.g. example.com)"
                                 value={domain}
                                 onChange={e => {
-                                    if (idx >= immutableCount) {
-                                        const newDomains = [...domains];
-                                        newDomains[idx] = e.target.value;
-                                        setDomains(newDomains);
-                                    }
+                                    const arr = [...newDomains];
+                                    arr[idx] = e.target.value;
+                                    setNewDomains(arr);
                                 }}
-                                disabled={idx < immutableCount}
+                                disabled={registering}
                             />
-                            {(idx >= immutableCount && domains.length > immutableCount + 1) && (
+                            {newDomains.length > 1 && (
                                 <button
                                     className="bg-red-600 hover:bg-red-700 px-2 rounded text-white text-sm font-bold"
-                                    onClick={() => setDomains(domains.filter((_, i) => i !== idx))}
+                                    onClick={() => setNewDomains(newDomains.filter((_, i) => i !== idx))}
                                     title="Remove"
+                                    disabled={registering}
                                 >-</button>
                             )}
                         </div>
@@ -136,10 +147,13 @@ function RegisterDomainModal({show, onClose, invoiceId, domainLimit, registeredD
                     <button
                         className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white text-sm font-bold mt-1"
                         onClick={handleAddDomain}
-                        disabled={!isUnlimited && domains.length >= domainLimit}
+                        disabled={
+                            registering ||
+                            (!isUnlimited && (registeredDomains.length + newDomains.length) >= domainLimit)
+                        }
                     >+ Add Domain
                     </button>
-                    {!isUnlimited && domains.length >= domainLimit && (
+                    {!isUnlimited && (registeredDomains.length + newDomains.length) >= domainLimit && (
                         <div className="text-xs text-yellow-400 mt-1">
                             Maximum {domainLimit} domains allowed.
                         </div>
@@ -236,7 +250,6 @@ export default function MyPlanPage() {
     const domainsUsed = plan?.registered_domain?.length || 0;
     const domainsMax = isUnlimited ? Infinity : Number(plan?.domain) || 0;
 
-    // check expired. Plan is expired if expired date < now (UTC)
     let isExpired = false;
     let expiredDateString = "-";
     if (plan?.expired) {
