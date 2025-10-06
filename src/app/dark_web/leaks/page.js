@@ -153,39 +153,44 @@ export default function LeaksPage() {
         return apiData.current_page_data
             .map((item) => {
                 const source = item._source;
-                const dataItem = Array.isArray(source?.Data)
-                    ? source.Data[0]
-                    : source?.Data;
-                if (!dataItem) return null;
-                const email = dataItem?.email || dataItem?.Email || "N/A";
+                // Ambil array Data (bisa array atau single object)
+                const dataArr = Array.isArray(source?.Data)
+                    ? source.Data
+                    : source?.Data
+                        ? [source.Data]
+                        : [];
+                // Gunakan data pertama untuk field utama card (email, dsb)
+                const mainData = dataArr[0] || {};
+                const email = mainData?.Email || mainData?.email || "N/A";
                 const fullName =
-                    dataItem?.FullName ||
-                    (dataItem?.FirstName && dataItem?.LastName
-                        ? `${dataItem.FirstName} ${dataItem.LastName}`
+                    mainData?.FullName ||
+                    (mainData?.FirstName && mainData?.LastName
+                        ? `${mainData.FirstName} ${mainData.LastName}`
                         : "N/A");
                 const location =
-                    dataItem?.Location ||
-                    dataItem?.Region ||
-                    dataItem?.Locality ||
-                    (dataItem?.Country ? `${dataItem.Country}` : "N/A");
+                    mainData?.Location ||
+                    mainData?.Region ||
+                    mainData?.Locality ||
+                    (mainData?.Country ? `${mainData.Country}` : "N/A");
                 const position =
-                    dataItem?.Title ||
-                    dataItem?.JobTitle ||
-                    (dataItem?.fields?.includes("password")
+                    mainData?.Title ||
+                    mainData?.JobTitle ||
+                    (mainData?.fields?.includes("password")
                         ? "Credentials exposed"
                         : "N/A");
                 const company =
-                    dataItem?.CompanyName ||
-                    dataItem?.JobCompanyName ||
-                    (dataItem?.origin
+                    mainData?.CompanyName ||
+                    mainData?.JobCompanyName ||
+                    (mainData?.origin
                         ? `From: ${
-                            Array.isArray(dataItem.origin)
-                                ? dataItem.origin.join(", ")
-                                : dataItem.origin
+                            Array.isArray(mainData.origin)
+                                ? mainData.origin.join(", ")
+                                : mainData.origin
                         }`
                         : "N/A");
                 const password =
-                    dataItem?.password ||
+                    mainData?.password ||
+                    mainData?.Password ||
                     (source?.source?.passwordless === 1
                         ? "No password exposed"
                         : "Not exposed");
@@ -204,16 +209,17 @@ export default function LeaksPage() {
                             : password !== "Not exposed"
                                 ? "Critical"
                                 : "Medium";
+
                 return {
                     id: item._id,
                     email,
                     name: fullName,
-                    firstName: dataItem?.FirstName,
-                    lastName: dataItem?.LastName,
+                    firstName: mainData?.FirstName,
+                    lastName: mainData?.LastName,
                     location,
                     position,
                     company,
-                    summary: dataItem?.Summary || source?.Info || "No summary available",
+                    summary: mainData?.Summary || source?.Info || "No summary available",
                     source: source?.Source || "Unknown",
                     breachDate,
                     records:
@@ -224,8 +230,8 @@ export default function LeaksPage() {
                                 : "N/A",
                     severity,
                     passwordExposed: password,
-                    additionalFields: dataItem?.fields || [],
-                    rawData: dataItem,
+                    additionalFields: mainData?.fields || [],
+                    rawData: dataArr, // <-- array semua data!
                 };
             })
             .filter(Boolean);

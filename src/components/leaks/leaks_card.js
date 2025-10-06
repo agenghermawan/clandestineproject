@@ -1,20 +1,18 @@
 import React from "react";
 
-// DynamicProfileInfo tetap seperti yang kamu punya
+// Recursive value renderer
 function renderValue(value, level = 0) {
     if (value === null || value === undefined) {
         return <span className="text-gray-400 italic">N/A</span>;
     }
     if (Array.isArray(value)) {
         if (value.length === 0) return <span className="text-gray-400 italic">[empty]</span>;
-        if (value.every(v => typeof v !== "object" || v === null)) {
-            return <span>{value.join(", ")}</span>;
-        }
+        // Tampilkan semua isi array sebagai block info, tidak sebagai tabel!
         return (
-            <div className={`pl-${Math.min(level * 2, 8)}`}>
+            <div className={`space-y-2 pl-${Math.min(level * 2, 8)}`}>
                 {value.map((item, idx) => (
-                    <div key={idx} className="my-1">
-                        {renderValue(item, level + 1)}
+                    <div key={idx} className="mb-2">
+                        <DynamicProfileInfo data={item} level={level + 1} />
                     </div>
                 ))}
             </div>
@@ -26,21 +24,32 @@ function renderValue(value, level = 0) {
     return <span>{String(value)}</span>;
 }
 
-function DynamicProfileInfo({ data, level = 0, previewCount = 3 }) {
+  function DynamicProfileInfo({ data, level = 0, previewCount = 3 }) {
     const [showAll, setShowAll] = React.useState(false);
 
     if (!data || typeof data !== "object") return null;
+
+    // Jika array, tampilkan setiap item array sebagai info block tanpa key angka
+    if (Array.isArray(data)) {
+        if (data.length === 0) return <span className="text-gray-400 italic">No Data</span>;
+        return (
+            <div className="space-y-3">
+                {data.map((item, idx) => (
+                    <div key={idx} className={`rounded ${level ? "bg-[#191b20]/60 p-3" : ""}`}>
+                        <DynamicProfileInfo data={item} level={level} />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // Untuk object (biasa)
     const entries = Object.entries(data);
     if (entries.length === 0) return <span className="text-gray-400 italic">No Data</span>;
-
     const toShow = (level === 0 && !showAll) ? entries.slice(0, previewCount) : entries;
 
     return (
-        <div
-            className={`text-xs ${
-                level ? "border border-gray-700 rounded bg-[#191b20]/60 p-3 space-y-2" : "space-y-2"
-            }`}
-        >
+        <div className={`text-xs ${level ? "space-y-2" : "space-y-2"}`}>
             {toShow.map(([key, value]) => (
                 <div key={key} className="flex items-start">
                     <div
@@ -53,7 +62,6 @@ function DynamicProfileInfo({ data, level = 0, previewCount = 3 }) {
                     <div className="text-gray-100 break-all">{renderValue(value, level)}</div>
                 </div>
             ))}
-
             {level === 0 && entries.length > previewCount && (
                 <button
                     type="button"
