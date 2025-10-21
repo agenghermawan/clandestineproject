@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import PaymentFlowModal from "../../components/pricing/payment_flow_modal";
 import AnimatedDarkWebBackground from "../../components/ui/myplan-background";
 import PaymentsTable from "../../components/payment/list_payment";
@@ -16,7 +16,7 @@ export default function MyPaymentsPage() {
 
     useEffect(() => {
         setLoading(true);
-        fetch("/api/my-payment", { credentials: "include" })
+        fetch("/api/my-payment", {credentials: "include"})
             .then(async (res) => {
                 if (!res.ok) throw new Error("Failed to fetch payments");
                 return res.json();
@@ -28,7 +28,7 @@ export default function MyPaymentsPage() {
 
     useEffect(() => {
         setLoadingPlan(true);
-        fetch("/api/my-plan", { credentials: "include" })
+        fetch("/api/my-plan", {credentials: "include"})
             .then(async (res) => res.json())
             .then((data) => setPlan(data?.data || null))
             .catch(() => setPlan(null))
@@ -59,11 +59,12 @@ export default function MyPaymentsPage() {
 
     return (
         <AnimatedDarkWebBackground>
-            <PaymentFlowModal {...modalProps} show={showPaymentModal} />
+            <PaymentFlowModal {...modalProps} show={showPaymentModal}/>
 
-            <div className="max-w-5xl mx-auto my-10 text-white px-6">
+            <div className="max-w-6xl mx-auto my-10 text-white px-6">
                 {/* Header / Hero Section */}
-                <div className="bg-gradient-to-r from-[#f03262]/20 via-[#6b21a8]/20 to-[#0ff]/20 backdrop-blur-md border border-[#6b21a8]/40 rounded-2xl p-8 shadow-lg mb-10">
+                <div
+                    className="bg-gradient-to-r from-[#f03262]/20 via-[#6b21a8]/20 to-[#0ff]/20 backdrop-blur-md border border-[#6b21a8]/40 rounded-2xl p-8 shadow-lg mb-10">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[#f03262] via-[#6b21a8] to-[#0ff]">
@@ -100,7 +101,8 @@ export default function MyPaymentsPage() {
                                 </p>
                             </div>
                             {isExpired && (
-                                <span className="text-red-400 font-semibold text-sm bg-red-500/10 px-3 py-1 rounded-full">
+                                <span
+                                    className="text-red-400 font-semibold text-sm bg-red-500/10 px-3 py-1 rounded-full">
                                     Expired
                                 </span>
                             )}
@@ -108,19 +110,22 @@ export default function MyPaymentsPage() {
 
                         {/* Plan Stats Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="bg-gradient-to-r from-[#0ff]/10 to-[#0ff]/5 p-4 rounded-xl border border-[#0ff]/40 text-center hover:scale-105 transition">
+                            <div
+                                className="bg-gradient-to-r from-[#0ff]/10 to-[#0ff]/5 p-4 rounded-xl border border-[#0ff]/40 text-center hover:scale-105 transition">
                                 <div className="text-[#0ff] font-bold text-xl">
                                     {isUnlimited ? "∞" : plan.domain}
                                 </div>
                                 <div className="text-gray-400 text-sm">Domain Limit</div>
                             </div>
-                            <div className="bg-gradient-to-r from-[#6b21a8]/10 to-[#f03262]/10 p-4 rounded-xl border border-[#6b21a8]/40 text-center hover:scale-105 transition">
+                            <div
+                                className="bg-gradient-to-r from-[#6b21a8]/10 to-[#f03262]/10 p-4 rounded-xl border border-[#6b21a8]/40 text-center hover:scale-105 transition">
                                 <div className="text-[#f03262] font-bold text-xl">
                                     {plan.registered_domain?.length || 0}
                                 </div>
                                 <div className="text-gray-400 text-sm">Registered</div>
                             </div>
-                            <div className="bg-gradient-to-r from-[#f03262]/10 to-[#0ff]/10 p-4 rounded-xl border border-[#f03262]/40 text-center hover:scale-105 transition">
+                            <div
+                                className="bg-gradient-to-r from-[#f03262]/10 to-[#0ff]/10 p-4 rounded-xl border border-[#f03262]/40 text-center hover:scale-105 transition">
                                 <div className="text-yellow-400 font-bold text-xl">
                                     {isUnlimited
                                         ? "∞"
@@ -137,7 +142,8 @@ export default function MyPaymentsPage() {
                                 <p className="text-gray-400 text-sm mb-2">Registered Domains:</p>
                                 <div className="bg-[#141422] rounded-lg p-3 border border-[#6b21a8]/30">
                                     {plan.registered_domain.map((d, i) => (
-                                        <div key={i} className="text-gray-200 font-mono text-sm border-b border-gray-800 last:border-none py-1">
+                                        <div key={i}
+                                             className="text-gray-200 font-mono text-sm border-b border-gray-800 last:border-none py-1">
                                             {d}
                                         </div>
                                     ))}
@@ -163,9 +169,9 @@ export default function MyPaymentsPage() {
                     ) : payments.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                             <svg className="w-16 h-16 mb-4 animate-pulse" viewBox="0 0 64 64" fill="none">
-                                <circle cx="32" cy="32" r="28" stroke="#f03262" strokeWidth="2" />
-                                <path d="M24 28h16v8H24z" fill="#1b1b2a" stroke="#f03262" />
-                                <circle cx="32" cy="44" r="2" fill="#f03262" />
+                                <circle cx="32" cy="32" r="28" stroke="#f03262" strokeWidth="2"/>
+                                <path d="M24 28h16v8H24z" fill="#1b1b2a" stroke="#f03262"/>
+                                <circle cx="32" cy="44" r="2" fill="#f03262"/>
                             </svg>
                             <h3 className="text-lg font-semibold mb-1">No Transactions Yet</h3>
                             <p className="text-gray-500 text-sm">
@@ -177,7 +183,7 @@ export default function MyPaymentsPage() {
                         </div>
                     ) : (
                         <div className="bg-[#1b1b2a]/70 border border-[#6b21a8]/40 rounded-2xl p-4 shadow-lg">
-                            <PaymentsTable payments={payments} onAction={handleShowModal} />
+                            <PaymentsTable payments={payments} onAction={handleShowModal}/>
                         </div>
                     )}
                 </div>

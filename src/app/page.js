@@ -1,9 +1,9 @@
 "use client";
+import React, {useEffect, useState} from "react";
 import Navbar from "../components/navbar";
 import Globe from "../components/globe";
 import Footer from "../components/footer";
 import Image from "next/image";
-import {useState} from "react";
 import {useRouter} from "next/navigation";
 
 import {
@@ -14,6 +14,108 @@ import {
     MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
+/* ---------------------------
+  New: stats to show on Home
+  same data as your dashboard
+----------------------------*/
+const homeStats = [
+    {label: "Email", value: 26102688785},
+    {label: "Password", value: 13342389831},
+    {label: "Full name", value: 12801652751},
+    {label: "Telephone", value: 11694818802},
+    {label: "Nick", value: 10456573331},
+    {label: "Document number", value: 3657038761},
+];
+
+function StatsCards({stats, duration = 900}) {
+    // animate counters from 0 to target for nicer UX on homepage
+    const [counts, setCounts] = useState(stats.map(() => 0));
+
+    useEffect(() => {
+        let raf = null;
+        let start = null;
+        const targets = stats.map((s) => s.value);
+
+        function step(timestamp) {
+            if (!start) start = timestamp;
+            const progress = Math.min((timestamp - start) / duration, 1);
+
+            setCounts(
+                targets.map((t) => {
+                    // ease out
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    return Math.floor(t * eased);
+                })
+            );
+
+            if (progress < 1) {
+                raf = requestAnimationFrame(step);
+            }
+        }
+
+        raf = requestAnimationFrame(step);
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+        };
+    }, [stats, duration]);
+
+    return (
+        <section className="py-14 bg-gradient-to-b from-transparent to-black/20">
+            <div className="max-w-7xl mx-auto px-6">
+                <div className="text-center mb-8">
+          <span className="text-[#f03262] font-mono text-sm tracking-widest">
+            DATA SNAPSHOT
+          </span>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mt-2">
+                        Live leak & exposure overview
+                    </h2>
+                    <p className="text-gray-400 max-w-2xl mx-auto mt-3">
+                        Quick glance at the current counts we’re tracking across sources —
+                        updated in near real-time on the dashboard.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {stats.map((s, i) => (
+                        <div
+                            key={s.label}
+                            className="bg-gradient-to-tr from-[#1b1b21] to-[#131317] border border-[#23232b] rounded-xl p-6 flex flex-col"
+                        >
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="text-sm text-gray-400 font-semibold">{s.label}</div>
+                                <div className="text-xs text-gray-500 bg-[#111115] px-2 py-1 rounded">
+                                    {i === 0 ? "primary" : "metric"}
+                                </div>
+                            </div>
+
+                            <div className="flex items-end justify-between">
+                                <div className="text-2xl md:text-3xl font-bold text-white">
+                                    {counts[i].toLocaleString("en-US")}
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs text-gray-400"></div>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 text-sm text-gray-400">
+                                <span
+                                    className="inline-block bg-[#f03262]/10 text-[#f03262] px-2 py-1 rounded mr-2 text-xs font-medium">
+                                  Live
+                                </span>
+                                Aggregated from deep/dark web sources and stealer logs.
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/* ---------------------------
+  Existing Home component
+  (only change: insert StatsCards after hero/banner)
+----------------------------*/
 export default function Home() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
@@ -42,11 +144,7 @@ export default function Home() {
             description:
                 "Detect compromised credentials, databases, and assets exposed on the dark web. Receive instant alerts to secure your business before attackers exploit your data.",
             icon: <MagnifyingGlassIcon className="w-10 h-10 text-[#f03262]"/>,
-            features: [
-                "Deep/dark web search",
-                "Leak & dump detection",
-                "Exposure alerting",
-            ],
+            features: ["Deep/dark web search", "Leak & dump detection", "Exposure alerting"],
         },
         {
             id: "vuln",
@@ -54,39 +152,35 @@ export default function Home() {
             description:
                 "Continuously scan your digital infrastructure for new vulnerabilities and exposures. Get notified to patch risks before they are exploited.",
             icon: <ShieldCheckIcon className="w-10 h-10 text-[#f03262]"/>,
-            features: [
-                "Automated asset scanning",
-                "Zero-day & CVE alerts",
-                "Continuous risk assessment",
-            ],
+            features: ["Automated asset scanning", "Zero-day & CVE alerts", "Continuous risk assessment"],
         },
     ];
 
-
     return (
         <div className="relative overflow-x-hidden">
-            <div
-                className="w-full bg-yellow-400 text-black text-center py-2 px-4 font-semibold text-sm flex items-center justify-center z-40 shadow-md">
-                <svg className="w-4 h-4 mr-2 text-black inline" fill="none" stroke="currentColor" strokeWidth="2"
-                     viewBox="0 0 24 24">
+            <div className="w-full bg-yellow-400 text-black text-center py-2 px-3 sm:px-4 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 z-40 shadow-md">
+                <svg className="w-4 h-4 text-black hidden sm:inline" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 9v2m0 4h.01M4.93 19.07A10 10 0 1 1 19.07 4.93a10 10 0 0 1-14.14 14.14z"/>
                 </svg>
-                This platform is currently in <span className="font-bold mx-1">Beta</span>. Features and data may
-                change. Please share feedback!
+
+                {/* short text for small screens, full text for >= sm */}
+                <span className="sm:hidden">Beta — features may change.  Please share feedback!</span>
+                <span className="hidden sm:inline">
+                This platform is currently in <strong className="font-bold mx-1">Beta</strong>. Features and data may change. Please share feedback!
+              </span>
             </div>
             {/* Hero Section */}
             <div className="relative h-screen w-full">
                 <Globe/>
 
                 <section
-                    className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 text-white z-10"
-                >
+                    className="absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-8 text-white z-10">
                     <div className="max-w-3xl mx-auto text-center">
-                        <h2 className="text-2xl md:text-3xl font-bold mb-4 animate-fade-in">
-                            Instantly Detect Stolen Credentials
-                        </h2>
+                        <h2 className="text-2xl md:text-3xl font-bold mb-4 animate-fade-in">Instantly Detect Stolen
+                            Credentials</h2>
                         <p className="text-md md:text-xl mb-8 animate-fade-in">
-                            Search our real-time stealer malware database for<br className="hidden md:block"/>
+                            Search our real-time stealer malware database for
+                            <br className="hidden md:block"/>
                             exposed credentials, cookies, and sensitive data targeting your domain.
                         </p>
 
@@ -111,16 +205,15 @@ export default function Home() {
                 </section>
             </div>
 
+            {/* NEW: Stats cards section (placed right after the hero/banner) */}
+            <StatsCards stats={homeStats}/>
+
             {/* Products Section - Dark Theme */}
             <section className="py-20 bg-gray-900 bg-opacity-50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="text-center mb-16">
-            <span className="text-[#f03262] font-mono text-sm tracking-widest">
-              OUR SOLUTIONS
-            </span>
-                        <h2 className="text-3xl md:text-5xl font-bold text-white mt-4">
-                            Unified Threat Intelligence
-                        </h2>
+                        <span className="text-[#f03262] font-mono text-sm tracking-widest">OUR SOLUTIONS</span>
+                        <h2 className="text-3xl md:text-5xl font-bold text-white mt-4">Unified Threat Intelligence</h2>
                         <div className="w-24 h-1 bg-gradient-to-r from-[#f03262] to-[#d82a56] mx-auto mt-6"></div>
                     </div>
 
@@ -131,11 +224,7 @@ export default function Home() {
                                 title: "Dark Web Stealer Monitoring",
                                 description:
                                     "Automated monitoring of stealer malware logs (Redline, Raccoon, Vidar, etc.) to detect stolen credentials, cookies, and sensitive assets targeting your organization.",
-                                features: [
-                                    "Stealer log detection",
-                                    "Credential & cookie alerts",
-                                    "Brand and domain protection",
-                                ],
+                                features: ["Stealer log detection", "Credential & cookie alerts", "Brand and domain protection"],
                                 href: "/dark_web/stealer",
                             },
                             {
@@ -143,11 +232,7 @@ export default function Home() {
                                 title: "Dark Web Leaks Monitoring",
                                 description:
                                     "Continuous surveillance of underground markets, leak sites, and forums to identify exposed credentials, databases, and sensitive data before attackers exploit them.",
-                                features: [
-                                    "Real-time leak discovery",
-                                    "Data exposure alerts",
-                                    "Deep & dark web coverage",
-                                ],
+                                features: ["Real-time leak discovery", "Data exposure alerts", "Deep & dark web coverage"],
                                 href: "/dark_web/leaks",
                             },
                             {
@@ -155,24 +240,15 @@ export default function Home() {
                                 title: "Vulnerability Scanning",
                                 description:
                                     "Automated scanning and monitoring of your digital assets for new vulnerabilities and exposures—enabling fast remediation and continuous risk reduction.",
-                                features: [
-                                    "Continuous external scanning",
-                                    "Asset discovery",
-                                    "Zero-day & CVE detection",
-                                ],
+                                features: ["Continuous external scanning", "Asset discovery", "Zero-day & CVE detection"],
                                 href: "/vulnerabilities",
                             },
                         ].map((product, index) => (
-                            <div
-                                key={index}
-                                className="bg-gray-800 border border-gray-700 rounded-xl p-8 hover:border-[#f03262] transition-all hover:shadow-lg hover:shadow-[#f03262]/10"
-                            >
-                                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center mb-6">
-                                    {product.icon}
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-3">
-                                    {product.title}
-                                </h3>
+                            <div key={index}
+                                 className="bg-gray-800 border border-gray-700 rounded-xl p-8 hover:border-[#f03262] transition-all hover:shadow-lg hover:shadow-[#f03262]/10">
+                                <div
+                                    className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center mb-6">{product.icon}</div>
+                                <h3 className="text-xl font-bold text-white mb-3">{product.title}</h3>
                                 <p className="text-gray-300 mb-5">{product.description}</p>
 
                                 <ul className="space-y-2 mb-6">
@@ -184,10 +260,8 @@ export default function Home() {
                                     ))}
                                 </ul>
 
-                                <a
-                                    href={product.href}
-                                    className="text-[#f03262] hover:text-white font-medium flex items-center group"
-                                >
+                                <a href={product.href}
+                                   className="text-[#f03262] hover:text-white font-medium flex items-center group">
                                     Explore solution
                                     <ArrowRightIcon
                                         className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"/>
@@ -216,22 +290,17 @@ export default function Home() {
                                 className="bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-sm p-6 rounded-xl border border-[#f03262]/20 shadow-lg shadow-[#f03262]/10">
                                 <div className="flex items-center mb-2">
                                     <div className="w-3 h-3 bg-[#f03262] rounded-full mr-2 animate-pulse"></div>
-                                    <h4 className="text-white font-bold">
-                                        LIVE STEALER & LEAK MONITORING
-                                    </h4>
+                                    <h4 className="text-white font-bold">LIVE STEALER & LEAK MONITORING</h4>
                                 </div>
-                                <p className="text-gray-300 text-sm font-mono tracking-wider">
-                                    Tracking stealer logs & leaks across 2,400+ darkweb sources
-                                </p>
+                                <p className="text-gray-300 text-sm font-mono tracking-wider">Tracking stealer logs &
+                                    leaks across 2,400+ darkweb sources</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Content Panel - Dark Theme */}
                     <div className="bg-gray-900 p-12 border-l border-gray-800 flex flex-col justify-center">
-            <span className="text-[#f03262] font-mono text-sm tracking-widest mb-2">
-              UNIFIED CYBER INTELLIGENCE
-            </span>
+                        <span className="text-[#f03262] font-mono text-sm tracking-widest mb-2">UNIFIED CYBER INTELLIGENCE</span>
                         <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 mb-6 bg-gradient-to-r from-white to-[#f03262] bg-clip-text text-transparent">
                             Our Core Features
                         </h2>
@@ -248,13 +317,9 @@ export default function Home() {
                                     <BugAntIcon className="w-6 h-6 text-[#f03262]"/>
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white">
-                                        Stealer Malware Log Monitoring
-                                    </h4>
-                                    <p className="text-gray-400 text-sm mt-1">
-                                        Detects and alerts on credentials, cookies, and sensitive data compromised by
-                                        stealer malware in real-time.
-                                    </p>
+                                    <h4 className="font-bold text-white">Stealer Malware Log Monitoring</h4>
+                                    <p className="text-gray-400 text-sm mt-1">Detects and alerts on credentials,
+                                        cookies, and sensitive data compromised by stealer malware in real-time.</p>
                                 </div>
                             </div>
 
@@ -265,13 +330,9 @@ export default function Home() {
                                     <MagnifyingGlassIcon className="w-6 h-6 text-[#f03262]"/>
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white">
-                                        Dark Web Leaks Monitoring
-                                    </h4>
-                                    <p className="text-gray-400 text-sm mt-1">
-                                        Continuously scans thousands of darkweb sources for credential leaks, database
-                                        dumps, and exposed assets.
-                                    </p>
+                                    <h4 className="font-bold text-white">Dark Web Leaks Monitoring</h4>
+                                    <p className="text-gray-400 text-sm mt-1">Continuously scans thousands of darkweb
+                                        sources for credential leaks, database dumps, and exposed assets.</p>
                                 </div>
                             </div>
 
@@ -282,13 +343,9 @@ export default function Home() {
                                     <ShieldCheckIcon className="w-6 h-6 text-[#f03262]"/>
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white">
-                                        Vulnerability Scanning & Alerts
-                                    </h4>
-                                    <p className="text-gray-400 text-sm mt-1">
-                                        Automated asset discovery and vulnerability scanning for continuous risk
-                                        reduction.
-                                    </p>
+                                    <h4 className="font-bold text-white">Vulnerability Scanning & Alerts</h4>
+                                    <p className="text-gray-400 text-sm mt-1">Automated asset discovery and
+                                        vulnerability scanning for continuous risk reduction.</p>
                                 </div>
                             </div>
                         </div>
@@ -299,7 +356,6 @@ export default function Home() {
                                 <ShieldCheckIcon className="w-5 h-5 mr-2"/>
                                 Request Access
                             </a>
-
                         </div>
                     </div>
                 </div>
@@ -310,23 +366,17 @@ export default function Home() {
                 className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 to-black border-t border-gray-800">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
-          <span className="text-sm font-mono text-[#f03262] tracking-widest">
-            USE CASES
-          </span>
+                        <span className="text-sm font-mono text-[#f03262] tracking-widest">USE CASES</span>
                         <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 bg-clip-text text-transparent bg-gradient-to-r from-[#f03262] to-[#d82a56]">
                             Intelligence For Every Industry
                         </h2>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {useCases.map((item) => (
-                            <div
-                                key={item.id}
-                                className="border border-[#f03262] bg-gray-800/50 shadow-lg shadow-[#f03262]/20 rounded-xl p-8 transition-all"
-                            >
+                            <div key={item.id}
+                                 className="border border-[#f03262] bg-gray-800/50 shadow-lg shadow-[#f03262]/20 rounded-xl p-8 transition-all">
                                 <div className="flex items-center mb-6">
-                                    <div className="p-3 rounded-lg bg-gray-800 mr-4">
-                                        {item.icon}
-                                    </div>
+                                    <div className="p-3 rounded-lg bg-gray-800 mr-4">{item.icon}</div>
                                     <h3 className="text-2xl font-bold text-white">{item.title}</h3>
                                 </div>
                                 <p className="text-gray-300 mb-6">{item.description}</p>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, {useState, useMemo} from "react";
 
 function getStatusLabel(status) {
     const base =
@@ -45,7 +45,7 @@ function formatCrypto(amount, asset) {
 }
 
 
-export default function PaymentsTable({ payments, onAction }) {
+export default function PaymentsTable({payments, onAction}) {
     const LIMIT = 5;
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
@@ -73,7 +73,7 @@ export default function PaymentsTable({ payments, onAction }) {
                     viewBox="0 0 64 64"
                     fill="none"
                 >
-                    <ellipse cx="32" cy="36" rx="18" ry="14" fill="#232339" />
+                    <ellipse cx="32" cy="36" rx="18" ry="14" fill="#232339"/>
                     <ellipse
                         cx="32"
                         cy="32"
@@ -82,13 +82,13 @@ export default function PaymentsTable({ payments, onAction }) {
                         stroke="#f03262"
                         strokeWidth="2"
                     />
-                    <circle cx="32" cy="44" r="2.5" fill="#f03262" />
+                    <circle cx="32" cy="44" r="2.5" fill="#f03262"/>
                 </svg>
                 <h2 className="text-xl font-bold text-white mb-2">
                     No Payments Found
                 </h2>
                 <p className="text-gray-400 max-w-sm mx-auto">
-                    You haven't made any payments yet.<br />
+                    You haven't made any payments yet.<br/>
                     Purchase a subscription plan to get started.
                 </p>
             </div>
@@ -136,7 +136,8 @@ export default function PaymentsTable({ payments, onAction }) {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto rounded-2xl border border-[#23232c] shadow-lg shadow-black/40 bg-[#13131a]/60 backdrop-blur-md">
+            <div
+                className="overflow-x-auto rounded-2xl border border-[#23232c] shadow-lg shadow-black/40 bg-[#13131a]/60 backdrop-blur-md">
                 <table className="min-w-full text-sm font-mono text-gray-200">
                     <thead>
                     <tr className="bg-gradient-to-r from-[#181825] to-[#23232c] text-pink-400 text-xs uppercase tracking-wider">
@@ -150,6 +151,7 @@ export default function PaymentsTable({ payments, onAction }) {
                             "Asset",
                             "Blockchain",
                             "Status",
+                            "Action"
                         ].map((h) => (
                             <th key={h} className="py-3 px-3 text-center">
                                 {h}
@@ -173,7 +175,10 @@ export default function PaymentsTable({ payments, onAction }) {
                             <td className="py-3 px-3">{payment.domain || "-"}</td>
                             <td className="py-3 px-3 capitalize">{payment.plan || "-"}</td>
                             <td className="py-3 px-3">
-                                {formatCrypto(payment.payment?.Amount, payment.payment?.AssetCode)}
+                                {formatCrypto(payment.payment?.Amount,)}
+                            </td>
+                            <td className="py-3 px-3">
+                                {payment.payment?.AssetCode}
                             </td>
                             <td className="py-3 px-3">
                                 {payment.payment?.BlockchainCode || "-"}

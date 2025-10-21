@@ -6,15 +6,34 @@ import AppToaster from "../../../components/ui/toaster";
 import toast from "react-hot-toast";
 import Modal from "../../../components/ui/modal-dashboard";
 import ConfirmModal from "../../../components/ui/confirm-modal";
-
-/*
-  Refactor: move button inline logic into named handler functions for readability.
-  - All logic remains in this single page/component.
-  - Handlers: handleCreateUser, handleUpdateUser, handleMakeAdmin, handleRemoveAdmin, handleDeleteUser
-  - Confirm flow still uses openConfirmFromModal (promise-like) and ConfirmModal component.
-*/
+import {useAuth} from "../../../context/AuthContext";
+import {useRouter} from "next/navigation";
 
 export default function UserManagementDashboard() {
+    const {authState} = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (authState === "unauthenticated") {
+            router.replace("/login");
+        }
+    }, [authState, router]);
+
+    if (authState === "loading" || authState === "unauthenticated") {
+        return (
+            <div
+                className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#14121a] via-[#1a1b20] to-[#232339]">
+                <div className="text-center">
+                    <svg className="mx-auto animate-spin h-10 w-10 text-pink-400 mb-4" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="opacity-20"/>
+                        <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <div className="text-gray-400">Checking authentication...</div>
+                </div>
+            </div>
+        );
+    }
+
     const [users, setUsers] = useState([]);
     const [search, setSearch] = useState("");
     const [selectedUser, setSelectedUser] = useState(null);
@@ -167,9 +186,6 @@ export default function UserManagementDashboard() {
         is_active: true,
     });
 
-    //
-    // Handlers (moved logic from inline buttons)
-    //
 
     const handleCreateUser = async () => {
         if (!newUser.username || !newUser.email) {
